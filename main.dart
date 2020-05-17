@@ -102,7 +102,7 @@ void main() {
     });
 
     // Handling /dog command
-    teledart.onCommand('cat').listen((message) async {
+    teledart.onCommand('dog').listen((message) async {
       sendFileFromAPI(teledart, message, advancedApi, AnimalType.Dog);
     });
 
@@ -233,7 +233,7 @@ void sendFileFromAPI(
   DogCatHelper advancedApi,
   AnimalType type,
 ) async {
-  final apiParams = DogCatHelper.getApiParams(AnimalType.Cat);
+  final apiParams = DogCatHelper.getApiParams(type);
   final args = StringLib.getArgs(message.text);
   String photoType = 'jpg,png';
 
@@ -254,6 +254,7 @@ void sendFileFromAPI(
     },
   ))
       .data[0];
+      
   final replyMarkup = InlineKeyboardMarkup(
     inline_keyboard: [
       [
