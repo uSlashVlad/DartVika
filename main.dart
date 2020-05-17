@@ -6,13 +6,17 @@ import 'package:dotenv/dotenv.dart' show load, env;
 import 'package:DartVika/random.dart';
 import 'package:DartVika/constants.dart';
 import 'package:DartVika/logger.dart';
-import 'package:DartVika/donationlib.dart';
+import 'package:DartVika/donations.dart';
+import 'package:DartVika/dogcatapi.dart';
+import 'package:DartVika/stringlib.dart';
 
 void main() {
   load();
 
   Logger logger = Logger('./main.log');
   DonationLib donations = DonationLib('./data/donations.json');
+  DogCatHelper advancedApi =
+      DogCatHelper(env['52f46af4-842c-42be-8bee-470eb80a7996']);
   String _botUsername;
 
   try {
@@ -86,10 +90,20 @@ void main() {
     // Handling /f command
     teledart.onCommand('f').listen((message) {
       teledart.telegram.getStickerSet('FforRespect').then((responce) {
-        var stickers = responce.stickers;
+        final stickers = responce.stickers;
         Sticker randSticker = RandomHelper.listElement(stickers);
         teledart.replySticker(message, randSticker.file_id);
       });
+    });
+
+    // Handling /cat command
+    teledart.onCommand('cat').listen((message) async {
+      sendFileFromAPI(teledart, message, advancedApi, AnimalType.Cat);
+    });
+
+    // Handling /dog command
+    teledart.onCommand('cat').listen((message) async {
+      sendFileFromAPI(teledart, message, advancedApi, AnimalType.Dog);
     });
 
     // Hadling Callback query
@@ -107,7 +121,55 @@ void main() {
           result = '[Processed]';
           break;
         default:
-          result = '[Unknown CQ]';
+          final cqArgs = query.data.split(' ');
+          switch (cqArgs[0]) {
+            case 'cat':
+              if (cqArgs[1] == 'upvote') {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Cat,
+                  cqArgs[2],
+                  1,
+                );
+              } else {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Cat,
+                  cqArgs[2],
+                  0,
+                );
+              }
+              result = '[Processed]';
+              break;
+            case 'dog':
+              if (cqArgs[1] == 'upvote') {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Dog,
+                  cqArgs[2],
+                  1,
+                );
+              } else {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Dog,
+                  cqArgs[2],
+                  0,
+                );
+              }
+              result = '[Processed]';
+              break;
+            default:
+              result = '[Unknown CQ]';
+          }
       }
       logger.logAction(
         ActionType.CallbackQuery,
@@ -165,8 +227,99 @@ void main() {
   }
 }
 
+void sendFileFromAPI(
+  TeleDart teledart,
+  Message message,
+  DogCatHelper advancedApi,
+  AnimalType type,
+) async {
+  final apiParams = DogCatHelper.getApiParams(AnimalType.Cat);
+  final args = StringLib.getArgs(message.text);
+  String photoType = 'jpg,png';
+
+  if (args.length != 0 && args[0] == 'gif') {
+    photoType = 'gif';
+    teledart.telegram.sendChatAction(message.chat.id, 'upload_video');
+  } else {
+    teledart.telegram.sendChatAction(message.chat.id, 'upload_photo');
+  }
+
+  final result = (await advancedApi.loadDataFromAPI(
+    apiParams['url'],
+    {
+      'mime_types': 'jpg,png',
+      'size': 'small',
+      'sub_id': message.from.username,
+      'limit': 1,
+    },
+  ))
+      .data[0];
+  final replyMarkup = InlineKeyboardMarkup(
+    inline_keyboard: [
+      [
+        InlineKeyboardButton(
+          text: '❤',
+          callback_data: '${apiParams['typeEN']} upvote ${result['id']}',
+        ),
+        InlineKeyboardButton(
+          text: '🤢',
+          callback_data: '${apiParams['typeEN']} downvote ${result['id']}',
+        ),
+      ],
+    ],
+  );
+
+  if (photoType == 'jpg,png') {
+    teledart.replyPhoto(
+      message,
+      result['url'],
+      reply_markup: replyMarkup,
+    );
+  } else {
+    teledart.replyAnimation(
+      message,
+      result['url'],
+      reply_markup: replyMarkup,
+    );
+  }
+}
+
+void handleVoteWithApi(
+  TeleDart teledart,
+  CallbackQuery query,
+  DogCatHelper advancedApi,
+  AnimalType type,
+  String id,
+  int value,
+) async {
+  final apiParams = DogCatHelper.getApiParams(type);
+
+  final result = await advancedApi.voteWithAPI(apiParams['url'], {
+    'image_id': id,
+    'sub_id': query.from.username,
+    'value': value,
+  });
+
+  if (result.statusCode == 200) {
+    teledart.telegram.answerCallbackQuery(
+      query.id,
+      text:
+          'Вы проголосовали ${(value == 1) ? 'за' : 'против'} этого ${apiParams['typeRU']}а!',
+    );
+  } else {
+    teledart.telegram.answerCallbackQuery(
+      query.id,
+      text: 'Произошла ошибка ${result.statusCode} на стороне API',
+    );
+  }
+}
+
 void editMessage(
-    TeleDart teledart, Message message, String newText, String parseMode) {
+  TeleDart teledart,
+  Message message,
+  String newText,
+  String parseMode,
+) {
   teledart.telegram.editMessageText(
     newText,
     chat_id: message.chat.id,

@@ -47,3 +47,6 @@ const kAboutCreator = '''<b>[ Создатель ]</b>
 Список донатеров и способ задонатить в /donations
 
 <i>Не ЧСВ :)</i>''';
+
+const kCatApiUrl = 'https://api.thecatapi.com';
+const kDogApiUrl = 'https://api.thedogapi.com';

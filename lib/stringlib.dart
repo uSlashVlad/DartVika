@@ -5,4 +5,17 @@ class StringLib {
     String seconds = (time.second >= 10) ? '${time.second}' : '0${time.second}';
     return '[$hours:$minutes:$seconds]';
   }
+
+  static List<String> getArgs(String text) {
+    final rawArgs = text.split(' ');
+    rawArgs.remove(' ');
+    rawArgs.removeAt(0);
+    for (int i = 0; i < rawArgs.length; i++) {
+      if (rawArgs[i] == '') {
+        rawArgs.removeAt(i);
+        i--;
+      }
+    }
+    return rawArgs;
+  }
 }

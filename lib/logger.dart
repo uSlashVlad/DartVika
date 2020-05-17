@@ -14,9 +14,10 @@ class Logger {
   File logFile;
   final String path;
 
-  void log(String text, {String separator = '\n'}) {
+  String log(String text, {String separator = '\n'}) {
     print(text);
     logFile.writeAsStringSync('${logFile.readAsStringSync()}$separator$text');
+    return text;
   }
 
   void logAction(ActionType type, {String user, String channel, String text, String additional = ''}) {
