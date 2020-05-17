@@ -72,6 +72,7 @@ void main() {
       }
     });
 
+    // Handling /luck command
     teledart.onCommand('luck').listen((message) {
       String text;
       if (RandomHelper.chance(0.5)) {
@@ -82,8 +83,17 @@ void main() {
       teledart.replyMessage(message, text);
     });
 
+    // Handling /f command
+    teledart.onCommand('f').listen((message) {
+      teledart.telegram.getStickerSet('FforRespect').then((responce) {
+        var stickers = responce.stickers;
+        Sticker randSticker = RandomHelper.listElement(stickers);
+        teledart.replySticker(message, randSticker.file_id);
+      });
+    });
+
     // Hadling Callback query
-    teledart.onCallbackQuery().listen((query) async {
+    teledart.onCallbackQuery().listen((query) {
       // print(query.toJson());
       String data = query.data;
       String result = '[Error]';
@@ -122,7 +132,8 @@ void main() {
 
       if (text != null) {
         if (text.toLowerCase().startsWith('вопрос:') && text.endsWith('?')) {
-          teledart.replyMessage(message, RandomHelper.listElemt(kAnsVariants));
+          teledart.replyMessage(
+              message, RandomHelper.listElement(kAnsVariants));
         }
       }
     });

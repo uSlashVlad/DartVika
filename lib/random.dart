@@ -9,7 +9,7 @@ class RandomHelper {
     return min + (Random().nextDouble() * max - min);
   }
 
-  static dynamic listElemt(List list) {
+  static dynamic listElement(List list) {
     return list[range(0, list.length)];
   }
 

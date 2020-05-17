@@ -19,7 +19,7 @@ const kAnsVariants = [
   'Да конечно же нет!',
 ];
 
-const kCommandsList = '''<b>[ Комманды ]</b>
+const kCommandsList = '''<b>[ Команды ]</b>
     
 -основные-
 /start - <i>"Hello World!"</i>
@@ -27,6 +27,7 @@ const kCommandsList = '''<b>[ Комманды ]</b>
 /gay - <i>о создателе</i>
 /donations - <i>список лучших людей на свете</i>
 /luck - <i>рандомно даст/не даст по жопе</i>
+/f - <i>Press F to pay respect</i>
 
 -другое-
 Вопрос: <code>[текст]</code>? - <i>бот как-нибудь отвечает в варианте да/нет</i>''';
