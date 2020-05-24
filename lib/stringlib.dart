@@ -18,4 +18,13 @@ class StringLib {
     }
     return rawArgs;
   }
+
+  static String joinMapArgs(Map map) {
+    String res = '';
+    map.forEach((key, value) {
+      res += '$key=$value&';
+    });
+    res = res.substring(0, res.length - 1);
+    return res;
+  }
 }

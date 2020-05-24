@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:teledart/model.dart';
 import 'package:teledart/teledart.dart';
 import 'package:teledart/telegram.dart';
@@ -15,8 +17,7 @@ void main() {
 
   Logger logger = Logger('./main.log');
   DonationLib donations = DonationLib('./data/donations.json');
-  DogCatHelper advancedApi =
-      DogCatHelper(env['52f46af4-842c-42be-8bee-470eb80a7996']);
+  DogCatHelper advancedApi = DogCatHelper(env['DOGCAT_KEY'], logger);
   String _botUsername;
 
   try {
@@ -24,6 +25,115 @@ void main() {
     teledart.start().then((me) {
       logger.log('[${DateTime.now()}]\n${me.username} is initialised');
       _botUsername = me.username;
+    });
+
+    // Hadling Callback query
+    teledart.onCallbackQuery().listen((query) {
+      // print(query.toJson());
+      String data = query.data;
+      String result = '[Error]';
+      switch (data) {
+        case 'help_about':
+          editMessage(teledart, query.message, kCommandsList, 'html');
+          result = '[Processed]';
+          break;
+        case 'help_commands':
+          editMessage(teledart, query.message, kAboutBot, 'html');
+          result = '[Processed]';
+          break;
+        default:
+          final cqArgs = query.data.split(' ');
+          switch (cqArgs[0]) {
+            case 'cat':
+              if (cqArgs[1] == 'upvote') {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Cat,
+                  cqArgs[2],
+                  1,
+                );
+              } else {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Cat,
+                  cqArgs[2],
+                  0,
+                );
+              }
+              result = '[Processed]';
+              break;
+            case 'dog':
+              if (cqArgs[1] == 'upvote') {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Dog,
+                  cqArgs[2],
+                  1,
+                );
+              } else {
+                handleVoteWithApi(
+                  teledart,
+                  query,
+                  advancedApi,
+                  AnimalType.Dog,
+                  cqArgs[2],
+                  0,
+                );
+              }
+              result = '[Processed]';
+              break;
+            default:
+              result = '[Unknown CQ]';
+          }
+      }
+      logger.logAction(
+        ActionType.CallbackQuery,
+        user: query.from.username,
+        channel: (query.message.chat.title != null)
+            ? query.message.chat.title
+            : _botUsername,
+        text: '$data >> $result',
+      );
+    });
+
+    // Handling messages
+    teledart.onMessage().listen((message) {
+      messageProcessing(teledart, message, logger, _botUsername);
+    });
+    teledart.onMention().listen((message) {
+      messageProcessing(teledart, message, logger, _botUsername);
+    });
+    teledart.onHashtag().listen((message) {
+      messageProcessing(teledart, message, logger, _botUsername);
+    });
+
+    // Handling general command situations
+    teledart.onCommand().listen((command) {
+      logger.logAction(
+        ActionType.Message,
+        user: command.from.username,
+        channel:
+            (command.chat.title != null) ? command.chat.title : _botUsername,
+        text: (command.text != null) ? command.text : '[S]',
+      );
+    });
+
+    // Handling messages editing
+    teledart.onEditedMessage().listen((message) {
+      logger.logAction(
+        ActionType.Message,
+        user: message.from.username,
+        channel:
+            (message.chat.title != null) ? message.chat.title : _botUsername,
+        text: (message.text != null) ? message.text : '[special]',
+        additional: '[E]',
+      );
     });
 
     // Handling /start command
@@ -105,123 +215,6 @@ void main() {
     teledart.onCommand('dog').listen((message) async {
       sendFileFromAPI(teledart, message, advancedApi, AnimalType.Dog);
     });
-
-    // Hadling Callback query
-    teledart.onCallbackQuery().listen((query) {
-      // print(query.toJson());
-      String data = query.data;
-      String result = '[Error]';
-      switch (data) {
-        case 'help_about':
-          editMessage(teledart, query.message, kCommandsList, 'html');
-          result = '[Processed]';
-          break;
-        case 'help_commands':
-          editMessage(teledart, query.message, kAboutBot, 'html');
-          result = '[Processed]';
-          break;
-        default:
-          final cqArgs = query.data.split(' ');
-          switch (cqArgs[0]) {
-            case 'cat':
-              if (cqArgs[1] == 'upvote') {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Cat,
-                  cqArgs[2],
-                  1,
-                );
-              } else {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Cat,
-                  cqArgs[2],
-                  0,
-                );
-              }
-              result = '[Processed]';
-              break;
-            case 'dog':
-              if (cqArgs[1] == 'upvote') {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Dog,
-                  cqArgs[2],
-                  1,
-                );
-              } else {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Dog,
-                  cqArgs[2],
-                  0,
-                );
-              }
-              result = '[Processed]';
-              break;
-            default:
-              result = '[Unknown CQ]';
-          }
-      }
-      logger.logAction(
-        ActionType.CallbackQuery,
-        user: query.from.username,
-        channel: (query.message.chat.title != null)
-            ? query.message.chat.title
-            : _botUsername,
-        text: '$data >> $result',
-      );
-    });
-
-    // Handling messages
-    teledart.onMessage().listen((message) {
-      String text = message.text;
-      logger.logAction(
-        ActionType.Message,
-        user: message.from.username,
-        channel:
-            (message.chat.title != null) ? message.chat.title : _botUsername,
-        text: (text != null) ? text : '[S]',
-      );
-
-      if (text != null) {
-        if (text.toLowerCase().startsWith('вопрос:') && text.endsWith('?')) {
-          teledart.replyMessage(
-              message, RandomHelper.listElement(kAnsVariants));
-        }
-      }
-    });
-
-    // Handling general command situations
-    teledart.onCommand().listen((command) {
-      logger.logAction(
-        ActionType.Message,
-        user: command.from.username,
-        channel:
-            (command.chat.title != null) ? command.chat.title : _botUsername,
-        text: (command.text != null) ? command.text : '[S]',
-      );
-    });
-
-    // Handling messages editing
-    teledart.onEditedMessage().listen((message) {
-      logger.logAction(
-        ActionType.Message,
-        user: message.from.username,
-        channel:
-            (message.chat.title != null) ? message.chat.title : _botUsername,
-        text: (message.text != null) ? message.text : '[special]',
-        additional: '[E]',
-      );
-    });
   } catch (e) {
     logger.log('[Fatal error]\n-- BOT WILL BE RESTARTED --\n$e');
   }
@@ -247,14 +240,14 @@ void sendFileFromAPI(
   final result = (await advancedApi.loadDataFromAPI(
     apiParams['url'],
     {
-      'mime_types': 'jpg,png',
+      'mime_types': photoType,
       'size': 'small',
       'sub_id': message.from.username,
       'limit': 1,
     },
   ))
       .data[0];
-      
+
   final replyMarkup = InlineKeyboardMarkup(
     inline_keyboard: [
       [
@@ -327,4 +320,44 @@ void editMessage(
     message_id: message.message_id,
     parse_mode: parseMode,
   );
+}
+
+void messageProcessing(
+  TeleDart teledart,
+  Message message,
+  Logger logger,
+  String botUsername,
+) {
+  String text = message.text;
+  logger.logAction(
+    ActionType.Message,
+    user: message.from.username,
+    channel: (message.chat.title != null) ? message.chat.title : botUsername,
+    text: (text != null) ? text : '[S]',
+  );
+
+  if (text != null) {
+    if (text.toLowerCase().startsWith('вопрос:') && text.endsWith('?')) {
+      teledart.replyMessage(message, RandomHelper.listElement(kAnsVariants));
+    } else if (text.startsWith('?')) {
+      if (text.startsWith('? ')) {
+        autoremoval(teledart, message, logger);
+      } else {
+        String strTimer = text.split(' ')[0].substring(1);
+        int timer = int.tryParse(strTimer);
+        if (timer != null) {
+          autoremoval(teledart, message, logger, timer);
+        }
+      }
+    }
+  }
+}
+
+void autoremoval(TeleDart teledart, Message message, Logger logger,
+    [int timer = 5]) {
+  logger.log('Message will be deleted after $timer seconds');
+  Timer(Duration(seconds: timer), () {
+    teledart.telegram.deleteMessage(message.chat.id, message.message_id);
+    logger.log('Message was deleted');
+  });
 }
