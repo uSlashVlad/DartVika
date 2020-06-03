@@ -30,13 +30,15 @@ const kCommandsList = '''<b>[ Команды ]</b>
 /donations - <i>список лучших людей на свете</i>
 /luck - <i>рандомно даст/не даст по жопе</i>
 /f - <i>Press F to pay respect</i>
+/changelog - <i>список изменений</i>
 
 -API-
 /cat - <i>отправит фото котика</i>
 /dog - <i>отправит фото пёсика</i>
 
 -другое-
-Вопрос: <code>[текст]</code>? - <i>бот как-нибудь отвечает в варианте да/нет</i>''';
+Вопрос: <code>[текст]</code>? - <i>бот как-нибудь отвечает в варианте да/нет</i>
+?<code>[время в сек]</code> <code>[текст]</code> - <i>бот удалит через количество секунд, указанное после "?"</i>''';
 
 /// String for /help command > help_about CQ
 const kAboutBot = '''Всё сделано ради <a href="https://umschool.net/core/profile/">Умскула</a>

@@ -11,12 +11,14 @@ import 'package:DartVika/logger.dart';
 import 'package:DartVika/donations.dart';
 import 'package:DartVika/dogcatapi.dart';
 import 'package:DartVika/stringlib.dart';
+import 'package:DartVika/changelog.dart';
 
 // Classes initializations
 Logger logger = Logger('./main.log');
 DonationLib donations = DonationLib('./data/donations.json');
 DogCatHelper advancedApi = DogCatHelper(env['DOGCAT_KEY'], logger);
 TeleDart teledart = TeleDart(Telegram(env['TOKEN']), Event());
+String changelog = loadChanges('./data/changelog');
 String _botUsername;
 
 void main() {
@@ -61,9 +63,8 @@ void main() {
       })
 
       // Handling /start command
-      ..onCommand('start').listen((message) {
-        teledart.replyMessage(message, 'Hello World!');
-      })
+      ..onCommand('start')
+          .listen((message) => teledart.replyMessage(message, 'Hello World!'))
 
       // Handling /help command
       ..onCommand('help').listen((message) {
@@ -90,9 +91,8 @@ void main() {
       })
 
       // Handling /gay command
-      ..onCommand('gay').listen((message) {
-        teledart.replyMessage(message, kAboutCreator, parse_mode: 'html');
-      })
+      ..onCommand('gay').listen((message) =>
+          teledart.replyMessage(message, kAboutCreator, parse_mode: 'html'))
 
       // Handling /donations command
       ..onCommand('donations').listen((message) {
@@ -101,7 +101,7 @@ void main() {
           String text = '<b><u>[Почётные донатеры]</u></b>\n';
           for (int i = 0; i < list.length; i++) {
             if (i < 3) text += '<b>'; // (for 1st-3rd places)
-            text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']}руб.\n';
+            text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']} руб.\n';
             if (i < 3) text += '</b>'; // (for 1st-3rd places)
           }
           teledart.replyMessage(message, text, parse_mode: 'html');
@@ -131,14 +131,16 @@ void main() {
       })
 
       // Handling /cat command
-      ..onCommand('cat').listen((message) {
-        sendFileFromAPI(message, AnimalType.Cat);
-      })
+      ..onCommand('cat')
+          .listen((message) => sendFileFromAPI(message, AnimalType.Cat))
 
       // Handling /dog command
-      ..onCommand('dog').listen((message) {
-        sendFileFromAPI(message, AnimalType.Dog);
-      });
+      ..onCommand('dog')
+          .listen((message) => sendFileFromAPI(message, AnimalType.Dog))
+
+      // Handling /changelog command
+      ..onCommand('changelog').listen((message) =>
+          teledart.replyMessage(message, '`$changelog`', parse_mode: 'markdown'));
   } catch (e) {
     // If main part causes problems
     logger.log('[Fatal error]\n\n$e\n\n-- BOT WILL BE RESTARTED --');
