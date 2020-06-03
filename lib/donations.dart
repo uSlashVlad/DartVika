@@ -1,17 +1,15 @@
-import 'package:file/file.dart';
-import 'package:file/local.dart';
 import 'dart:convert';
+import 'dart:io';
 
 class DonationLib {
   DonationLib(this.jsonPath) {
-    fs = LocalFileSystem();
-    jsonFile = fs.file(jsonPath);
+    jsonFile = File(jsonPath);
   }
-
-  FileSystem fs;
+  
   File jsonFile;
   final String jsonPath;
 
+  /// Method fot loading list of donators
   List<dynamic> loadList() {
     return jsonDecode(jsonFile.readAsStringSync());
   }

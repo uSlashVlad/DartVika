@@ -16,6 +16,7 @@ class DogCatHelper {
   Dio dio;
   final Logger logger;
 
+  /// Method for getting data for correct request
   static Map<String, String> getApiParams(AnimalType type) {
     String url;
     String typeEN;
@@ -32,9 +33,6 @@ class DogCatHelper {
         typeEN = 'dog';
         typeRU = 'пёсик';
         break;
-      default:
-        print('Animal type error!');
-        return null;
     }
 
     return {
@@ -44,6 +42,7 @@ class DogCatHelper {
     };
   }
 
+  /// Method for getting data from cat/dog API
   Future<Response> loadDataFromAPI(String apiUrl, Map<String, dynamic> body) async {
     final url = '$apiUrl/v1/images/search?${StringLib.joinMapArgs(body)}';
     logger.log('API request: $url');
@@ -57,6 +56,7 @@ class DogCatHelper {
     return response;
   }
 
+  /// Method for voting for/against picture
   Future<Response> voteWithAPI(String apiUrl, Map<String, dynamic> body) async {
     final url = '$apiUrl/v1/votes';
     Response response = await dio.post(

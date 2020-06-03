@@ -1,3 +1,4 @@
+/// Variants for "Вопрос: <question>" syntax
 const kAnsVariants = [
   'Да, конечно',
   'Определённо',
@@ -19,6 +20,7 @@ const kAnsVariants = [
   'Да конечно же нет!',
 ];
 
+/// String for /help command > help_commands CQ
 const kCommandsList = '''<b>[ Команды ]</b>
     
 -основные-
@@ -36,6 +38,7 @@ const kCommandsList = '''<b>[ Команды ]</b>
 -другое-
 Вопрос: <code>[текст]</code>? - <i>бот как-нибудь отвечает в варианте да/нет</i>''';
 
+/// String for /help command > help_about CQ
 const kAboutBot = '''Всё сделано ради <a href="https://umschool.net/core/profile/">Умскула</a>
 
 <b>[ О боте ]</b>
@@ -45,6 +48,7 @@ const kAboutBot = '''Всё сделано ради <a href="https://umschool.ne
 
 О создателе: /gay''';
 
+/// String for /gay command
 const kAboutCreator = '''<b>[ Создатель ]</b>
 <a href="https://t.me/uslashvlad">uslashvlad</a>
 <a href="https://github.com/uslashvlad">GitHub</a> <a href="https://vk.com/uslashvlad">ВК</a>
@@ -52,5 +56,7 @@ const kAboutCreator = '''<b>[ Создатель ]</b>
 
 <i>Не ЧСВ :)</i>''';
 
+/// Cat API url
 const kCatApiUrl = 'https://api.thecatapi.com';
+/// Dog API url
 const kDogApiUrl = 'https://api.thedogapi.com';

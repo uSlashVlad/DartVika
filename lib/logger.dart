@@ -1,5 +1,4 @@
-import 'package:file/file.dart';
-import 'package:file/local.dart';
+import 'dart:io';
 
 import 'package:DartVika/stringlib.dart';
 
@@ -7,20 +6,26 @@ enum ActionType { Message, CallbackQuery, Other }
 
 class Logger {
   Logger(this.path) {
-    fs = LocalFileSystem();
-    logFile = fs.file(path);
+    logFile = File(path);
   }
-  FileSystem fs;
   File logFile;
   final String path;
 
+  /// Method adds at end of log file "[separator][text]"
   String log(String text, {String separator = '\n'}) {
     print(text);
     logFile.writeAsStringSync('${logFile.readAsStringSync()}$separator$text');
     return text;
   }
 
-  void logAction(ActionType type, {String user, String channel, String text, String additional = ''}) {
+  /// Method for logging some specific action.
+  void logAction(
+    ActionType type, {
+    String user,
+    String channel,
+    String text,
+    String additional = '',
+  }) {
     DateTime time = DateTime.now();
     String message = '${StringLib.beautifulizeTime(time)} ';
     switch (type) {

@@ -12,231 +12,158 @@ import 'package:DartVika/donations.dart';
 import 'package:DartVika/dogcatapi.dart';
 import 'package:DartVika/stringlib.dart';
 
-void main() {
-  load();
+// Classes initializations
+Logger logger = Logger('./main.log');
+DonationLib donations = DonationLib('./data/donations.json');
+DogCatHelper advancedApi = DogCatHelper(env['DOGCAT_KEY'], logger);
+TeleDart teledart = TeleDart(Telegram(env['TOKEN']), Event());
+String _botUsername;
 
-  Logger logger = Logger('./main.log');
-  DonationLib donations = DonationLib('./data/donations.json');
-  DogCatHelper advancedApi = DogCatHelper(env['DOGCAT_KEY'], logger);
-  String _botUsername;
+void main() {
+  load(); // Enviroment variables loading
 
   try {
-    TeleDart teledart = TeleDart(Telegram(env['TOKEN']), Event());
     teledart.start().then((me) {
       logger.log('[${DateTime.now()}]\n${me.username} is initialised');
       _botUsername = me.username;
     });
 
     // Hadling Callback query
-    teledart.onCallbackQuery().listen((query) {
-      // print(query.toJson());
-      String data = query.data;
-      String result = '[Error]';
-      switch (data) {
-        case 'help_about':
-          editMessage(teledart, query.message, kCommandsList, 'html');
-          result = '[Processed]';
-          break;
-        case 'help_commands':
-          editMessage(teledart, query.message, kAboutBot, 'html');
-          result = '[Processed]';
-          break;
-        default:
-          final cqArgs = query.data.split(' ');
-          switch (cqArgs[0]) {
-            case 'cat':
-              if (cqArgs[1] == 'upvote') {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Cat,
-                  cqArgs[2],
-                  1,
-                );
-              } else {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Cat,
-                  cqArgs[2],
-                  0,
-                );
-              }
-              result = '[Processed]';
-              break;
-            case 'dog':
-              if (cqArgs[1] == 'upvote') {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Dog,
-                  cqArgs[2],
-                  1,
-                );
-              } else {
-                handleVoteWithApi(
-                  teledart,
-                  query,
-                  advancedApi,
-                  AnimalType.Dog,
-                  cqArgs[2],
-                  0,
-                );
-              }
-              result = '[Processed]';
-              break;
-            default:
-              result = '[Unknown CQ]';
+    teledart
+      ..onCallbackQuery().listen((query) => callbackqueryProcessing)
+
+      // Handling messages
+      ..onMessage().listen((message) => messageProcessing(message))
+      ..onMention().listen((message) => messageProcessing(message))
+      ..onHashtag().listen((message) => messageProcessing(message))
+
+      // Handling general command situations
+      ..onCommand().listen((command) {
+        logger.logAction(
+          ActionType.Message,
+          user: command.from.username,
+          channel:
+              (command.chat.title != null) ? command.chat.title : _botUsername,
+          text: (command.text != null) ? command.text : '[S]',
+        );
+      })
+
+      // Handling messages editing
+      ..onEditedMessage().listen((message) {
+        logger.logAction(
+          ActionType.Message,
+          user: message.from.username,
+          channel:
+              (message.chat.title != null) ? message.chat.title : _botUsername,
+          text: (message.text != null) ? message.text : '[special]',
+          additional: '[E]',
+        );
+      })
+
+      // Handling /start command
+      ..onCommand('start').listen((message) {
+        teledart.replyMessage(message, 'Hello World!');
+      })
+
+      // Handling /help command
+      ..onCommand('help').listen((message) {
+        teledart.replyMessage(
+          message,
+          'A?',
+          reply_markup: InlineKeyboardMarkup(
+            inline_keyboard: [
+              [
+                InlineKeyboardButton(
+                  text: 'Что можешь?',
+                  callback_data: 'help_about',
+                ),
+              ],
+              [
+                InlineKeyboardButton(
+                  text: 'О боте',
+                  callback_data: 'help_commands',
+                ),
+              ],
+            ],
+          ),
+        );
+      })
+
+      // Handling /gay command
+      ..onCommand('gay').listen((message) {
+        teledart.replyMessage(message, kAboutCreator, parse_mode: 'html');
+      })
+
+      // Handling /donations command
+      ..onCommand('donations').listen((message) {
+        try {
+          var list = donations.loadList();
+          String text = '<b><u>[Почётные донатеры]</u></b>\n';
+          for (int i = 0; i < list.length; i++) {
+            if (i < 3) text += '<b>'; // (for 1st-3rd places)
+            text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']}\n';
+            if (i < 3) text += '</b>'; // (for 1st-3rd places)
           }
-      }
-      logger.logAction(
-        ActionType.CallbackQuery,
-        user: query.from.username,
-        channel: (query.message.chat.title != null)
-            ? query.message.chat.title
-            : _botUsername,
-        text: '$data >> $result',
-      );
-    });
-
-    // Handling messages
-    teledart.onMessage().listen((message) {
-      messageProcessing(teledart, message, logger, _botUsername);
-    });
-    teledart.onMention().listen((message) {
-      messageProcessing(teledart, message, logger, _botUsername);
-    });
-    teledart.onHashtag().listen((message) {
-      messageProcessing(teledart, message, logger, _botUsername);
-    });
-
-    // Handling general command situations
-    teledart.onCommand().listen((command) {
-      logger.logAction(
-        ActionType.Message,
-        user: command.from.username,
-        channel:
-            (command.chat.title != null) ? command.chat.title : _botUsername,
-        text: (command.text != null) ? command.text : '[S]',
-      );
-    });
-
-    // Handling messages editing
-    teledart.onEditedMessage().listen((message) {
-      logger.logAction(
-        ActionType.Message,
-        user: message.from.username,
-        channel:
-            (message.chat.title != null) ? message.chat.title : _botUsername,
-        text: (message.text != null) ? message.text : '[special]',
-        additional: '[E]',
-      );
-    });
-
-    // Handling /start command
-    teledart.onCommand('start').listen((message) {
-      teledart.replyMessage(message, 'Hello World!');
-    });
-
-    // Handling /help command
-    teledart.onCommand('help').listen((message) {
-      teledart.replyMessage(
-        message,
-        'A?',
-        reply_markup: InlineKeyboardMarkup(
-          inline_keyboard: [
-            [
-              InlineKeyboardButton(
-                text: 'Что можешь?',
-                callback_data: 'help_about',
-              ),
-            ],
-            [
-              InlineKeyboardButton(
-                text: 'О боте',
-                callback_data: 'help_commands',
-              ),
-            ],
-          ],
-        ),
-      );
-    });
-
-    // Handling /gay command
-    teledart.onCommand('gay').listen((message) {
-      teledart.replyMessage(message, kAboutCreator, parse_mode: 'html');
-    });
-
-    // Handling /donations command
-    teledart.onCommand('donations').listen((message) {
-      try {
-        var list = donations.loadList();
-        String text = '<b><u>[Почётные донатеры]</u></b>\n';
-        for (int i = 0; i < list.length; i++) {
-          if (i < 3) text += '<b>';
-          text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']}\n';
-          if (i < 3) text += '</b>';
+          teledart.replyMessage(message, text, parse_mode: 'html');
+        } catch (e) {
+          logger.log('[Fatal command error] $e');
         }
-        teledart.replyMessage(message, text, parse_mode: 'html');
-      } catch (e) {
-        logger.log('[Fatal command error] $e');
-      }
-    });
+      })
 
-    // Handling /luck command
-    teledart.onCommand('luck').listen((message) {
-      String text;
-      if (RandomHelper.chance(0.5)) {
-        text = 'Тебе не повезло, получай по жопе 👋👋👋';
-      } else {
-        text = 'Тебе повезло, твоя жопа в сохранности';
-      }
-      teledart.replyMessage(message, text);
-    });
+      // Handling /luck command
+      ..onCommand('luck').listen((message) {
+        String text;
+        if (RandomHelper.chance(0.5)) {
+          text = 'Тебе не повезло, получай по жопе 👋👋👋';
+        } else {
+          text = 'Тебе повезло, твоя жопа в сохранности';
+        }
+        teledart.replyMessage(message, text);
+      })
 
-    // Handling /f command
-    teledart.onCommand('f').listen((message) {
-      teledart.telegram.getStickerSet('FforRespect').then((responce) {
-        final stickers = responce.stickers;
-        Sticker randSticker = RandomHelper.listElement(stickers);
-        teledart.replySticker(message, randSticker.file_id);
+      // Handling /f command
+      ..onCommand('f').listen((message) {
+        teledart.telegram.getStickerSet('FforRespect').then((responce) {
+          final stickers = responce.stickers;
+          Sticker randSticker = RandomHelper.listElement(stickers);
+          teledart.replySticker(message, randSticker.file_id);
+        });
+      })
+
+      // Handling /cat command
+      ..onCommand('cat').listen((message) {
+        sendFileFromAPI(message, AnimalType.Cat);
+      })
+
+      // Handling /dog command
+      ..onCommand('dog').listen((message) {
+        sendFileFromAPI(message, AnimalType.Dog);
       });
-    });
-
-    // Handling /cat command
-    teledart.onCommand('cat').listen((message) async {
-      sendFileFromAPI(teledart, message, advancedApi, AnimalType.Cat);
-    });
-
-    // Handling /dog command
-    teledart.onCommand('dog').listen((message) async {
-      sendFileFromAPI(teledart, message, advancedApi, AnimalType.Dog);
-    });
   } catch (e) {
-    logger.log('[Fatal error]\n-- BOT WILL BE RESTARTED --\n$e');
+    // If main part causes problems
+    logger.log('[Fatal error]\n\n$e\n\n-- BOT WILL BE RESTARTED --');
+    main();
   }
 }
 
+/// Function for sending file from API to chat
 void sendFileFromAPI(
-  TeleDart teledart,
   Message message,
-  DogCatHelper advancedApi,
   AnimalType type,
 ) async {
   final apiParams = DogCatHelper.getApiParams(type);
   final args = StringLib.getArgs(message.text);
   String photoType = 'jpg,png';
 
-  if (args.length != 0 && args[0] == 'gif') {
+  // Chat action to chat like "sending photo..."
+  if (args.length != 0 && args[1] == 'gif') {
     photoType = 'gif';
     teledart.telegram.sendChatAction(message.chat.id, 'upload_video');
   } else {
     teledart.telegram.sendChatAction(message.chat.id, 'upload_photo');
   }
 
+  // Request
   final result = (await advancedApi.loadDataFromAPI(
     apiParams['url'],
     {
@@ -248,6 +175,7 @@ void sendFileFromAPI(
   ))
       .data[0];
 
+  // Inline keyboard
   final replyMarkup = InlineKeyboardMarkup(
     inline_keyboard: [
       [
@@ -278,16 +206,16 @@ void sendFileFromAPI(
   }
 }
 
+/// Function for handling votes
 void handleVoteWithApi(
-  TeleDart teledart,
   CallbackQuery query,
-  DogCatHelper advancedApi,
   AnimalType type,
   String id,
   int value,
 ) async {
   final apiParams = DogCatHelper.getApiParams(type);
 
+  // Request
   final result = await advancedApi.voteWithAPI(apiParams['url'], {
     'image_id': id,
     'sub_id': query.from.username,
@@ -295,12 +223,14 @@ void handleVoteWithApi(
   });
 
   if (result.statusCode == 200) {
+    // If everything is OK
     teledart.telegram.answerCallbackQuery(
       query.id,
       text:
           'Вы проголосовали ${(value == 1) ? 'за' : 'против'} этого ${apiParams['typeRU']}а!',
     );
   } else {
+    // If there is an error
     teledart.telegram.answerCallbackQuery(
       query.id,
       text: 'Произошла ошибка ${result.statusCode} на стороне API',
@@ -308,12 +238,8 @@ void handleVoteWithApi(
   }
 }
 
-void editMessage(
-  TeleDart teledart,
-  Message message,
-  String newText,
-  String parseMode,
-) {
+/// Function for simple message editing
+void editMessage(Message message, String newText, String parseMode) {
   teledart.telegram.editMessageText(
     newText,
     chat_id: message.chat.id,
@@ -322,39 +248,109 @@ void editMessage(
   );
 }
 
-void messageProcessing(
-  TeleDart teledart,
-  Message message,
-  Logger logger,
-  String botUsername,
-) {
+/// Function for processing usual messages
+void messageProcessing(Message message) {
   String text = message.text;
   logger.logAction(
     ActionType.Message,
     user: message.from.username,
-    channel: (message.chat.title != null) ? message.chat.title : botUsername,
+    channel: (message.chat.title != null) ? message.chat.title : _botUsername,
     text: (text != null) ? text : '[S]',
   );
 
   if (text != null) {
     if (text.toLowerCase().startsWith('вопрос:') && text.endsWith('?')) {
+      // For "Вопрос: <question>" syntax
       teledart.replyMessage(message, RandomHelper.listElement(kAnsVariants));
     } else if (text.startsWith('?')) {
-      if (text.startsWith('? ')) {
-        autoremoval(teledart, message, logger);
+      // Handling messages for autoremoval
+      if (text.startsWith('? ') || text.startsWith('?\n')) {
+        // Without specific timer
+        autoremoval(message);
       } else {
-        String strTimer = text.split(' ')[0].substring(1);
+        // With specific timer
+        // Cuts string with lines, spaces, gets the very first part (with "?<time>" syntax)
+        String strTimer = text.split('\n')[0].split(' ')[0].substring(1);
         int timer = int.tryParse(strTimer);
         if (timer != null) {
-          autoremoval(teledart, message, logger, timer);
+          autoremoval(message, timer);
         }
       }
     }
   }
 }
 
-void autoremoval(TeleDart teledart, Message message, Logger logger,
-    [int timer = 5]) {
+/// Function fot processing CQs
+void callbackqueryProcessing(CallbackQuery query) {
+  // print(query.toJson());
+  String data = query.data;
+  String result = '[Error]';
+  switch (data) {
+    // /help command CQs processing
+    case 'help_about':
+      editMessage(query.message, kCommandsList, 'html');
+      result = '[Processed]';
+      break;
+    case 'help_commands':
+      editMessage(query.message, kAboutBot, 'html');
+      result = '[Processed]';
+      break;
+    default:
+      // /cat and /dog commands CQs processing
+      final cqArgs = StringLib.getArgs(query.data);
+      switch (cqArgs[0]) {
+        case 'cat':
+          if (cqArgs[1] == 'upvote') {
+            handleVoteWithApi(
+              query,
+              AnimalType.Cat,
+              cqArgs[2],
+              1,
+            );
+          } else {
+            handleVoteWithApi(
+              query,
+              AnimalType.Cat,
+              cqArgs[2],
+              0,
+            );
+          }
+          result = '[Processed]';
+          break;
+        case 'dog':
+          if (cqArgs[1] == 'upvote') {
+            handleVoteWithApi(
+              query,
+              AnimalType.Dog,
+              cqArgs[2],
+              1,
+            );
+          } else {
+            handleVoteWithApi(
+              query,
+              AnimalType.Dog,
+              cqArgs[2],
+              0,
+            );
+          }
+          result = '[Processed]';
+          break;
+        default:
+          result = '[Unknown CQ]';
+      }
+  }
+  logger.logAction(
+    ActionType.CallbackQuery,
+    user: query.from.username,
+    channel: (query.message.chat.title != null)
+        ? query.message.chat.title
+        : _botUsername,
+    text: '$data >> $result',
+  );
+}
+
+/// Function for processing autoremoval
+void autoremoval(Message message, [int timer = 5]) {
   logger.log('Message will be deleted after $timer seconds');
   Timer(Duration(seconds: timer), () {
     teledart.telegram.deleteMessage(message.chat.id, message.message_id);
