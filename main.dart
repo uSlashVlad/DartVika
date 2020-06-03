@@ -30,12 +30,12 @@ void main() {
 
     // Hadling Callback query
     teledart
-      ..onCallbackQuery().listen((query) => callbackqueryProcessing)
+      ..onCallbackQuery().listen(callbackqueryProcessing)
 
       // Handling messages
-      ..onMessage().listen((message) => messageProcessing(message))
-      ..onMention().listen((message) => messageProcessing(message))
-      ..onHashtag().listen((message) => messageProcessing(message))
+      ..onMessage().listen(messageProcessing)
+      ..onMention().listen(messageProcessing)
+      ..onHashtag().listen(messageProcessing)
 
       // Handling general command situations
       ..onCommand().listen((command) {
@@ -101,7 +101,7 @@ void main() {
           String text = '<b><u>[Почётные донатеры]</u></b>\n';
           for (int i = 0; i < list.length; i++) {
             if (i < 3) text += '<b>'; // (for 1st-3rd places)
-            text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']}\n';
+            text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']}руб.\n';
             if (i < 3) text += '</b>'; // (for 1st-3rd places)
           }
           teledart.replyMessage(message, text, parse_mode: 'html');
@@ -156,7 +156,7 @@ void sendFileFromAPI(
   String photoType = 'jpg,png';
 
   // Chat action to chat like "sending photo..."
-  if (args.length != 0 && args[1] == 'gif') {
+  if (args.length > 1 && args[1] == 'gif') {
     photoType = 'gif';
     teledart.telegram.sendChatAction(message.chat.id, 'upload_video');
   } else {
