@@ -60,6 +60,7 @@ void main() {
           text: (message.text != null) ? message.text : '[special]',
           additional: '[E]',
         );
+        messagePostProcessing(message);
       })
 
       // Handling /start command
@@ -97,6 +98,18 @@ void main() {
       // Handling /donations command
       ..onCommand('donations').listen((message) {
         try {
+          final inlineKeyboard = InlineKeyboardMarkup(inline_keyboard: [
+            [
+              InlineKeyboardButton(
+                  text: 'Мой Qiwi', url: 'https://qiwi.com/n/VLADN')
+            ],
+            [
+              InlineKeyboardButton(
+                  text: 'Donation alerts',
+                  url: 'https://www.donationalerts.com/r/uslashvlad')
+            ],
+          ]);
+
           var list = donations.loadList();
           String text = '<b><u>[Почётные донатеры]</u></b>\n';
           for (int i = 0; i < list.length; i++) {
@@ -104,7 +117,12 @@ void main() {
             text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']} руб.\n';
             if (i < 3) text += '</b>'; // (for 1st-3rd places)
           }
-          teledart.replyMessage(message, text, parse_mode: 'html');
+          teledart.replyMessage(
+            message,
+            text,
+            parse_mode: 'html',
+            reply_markup: inlineKeyboard,
+          );
         } catch (e) {
           logger.log('[Fatal command error] $e');
         }
@@ -139,8 +157,8 @@ void main() {
           .listen((message) => sendFileFromAPI(message, AnimalType.Dog))
 
       // Handling /changelog command
-      ..onCommand('changelog').listen((message) =>
-          teledart.replyMessage(message, '`$changelog`', parse_mode: 'markdown'));
+      ..onCommand('changelog').listen((message) => teledart
+          .replyMessage(message, '`$changelog`', parse_mode: 'markdown'));
   } catch (e) {
     // If main part causes problems
     logger.log('[Fatal error]\n\n$e\n\n-- BOT WILL BE RESTARTED --');
@@ -259,6 +277,11 @@ void messageProcessing(Message message) {
     channel: (message.chat.title != null) ? message.chat.title : _botUsername,
     text: (text != null) ? text : '[S]',
   );
+  messagePostProcessing(message);
+}
+
+void messagePostProcessing(Message message) {
+  String text = message.text;
 
   if (text != null) {
     if (text.toLowerCase().startsWith('вопрос:') && text.endsWith('?')) {
