@@ -12,10 +12,10 @@ import 'package:DartVika/donations.dart';
 import 'package:DartVika/dogcatapi.dart';
 import 'package:DartVika/stringlib.dart';
 import 'package:DartVika/changelog.dart';
+import 'package:DartVika/database.dart';
 
 // Classes initializations
 Logger logger = Logger('./main.log');
-DonationLib donations = DonationLib('./data/donations.json');
 DogCatHelper advancedApi = DogCatHelper(env['DOGCAT_KEY'], logger);
 TeleDart teledart = TeleDart(Telegram(env['TOKEN']), Event());
 String changelog = loadChanges('./data/changelog');
@@ -23,6 +23,8 @@ String _botUsername;
 
 void main() {
   load(); // Enviroment variables loading
+
+  MongoDB().start('backdb');
 
   try {
     teledart.start().then((me) {
@@ -96,7 +98,7 @@ void main() {
           teledart.replyMessage(message, kAboutCreator, parse_mode: 'html'))
 
       // Handling /donations command
-      ..onCommand('donations').listen((message) {
+      ..onCommand('donations').listen((message) async {
         try {
           final inlineKeyboard = InlineKeyboardMarkup(inline_keyboard: [
             [
@@ -110,13 +112,15 @@ void main() {
             ],
           ]);
 
-          var list = donations.loadList();
+          final donations = await DonationLib.loadList();
           String text = '<b><u>[Почётные донатеры]</u></b>\n';
-          for (int i = 0; i < list.length; i++) {
+          int i = 0;
+          donations.forEach((key, value) {
             if (i < 3) text += '<b>'; // (for 1st-3rd places)
-            text += '${i + 1}) ${list[i]['donator']}\n${list[i]['sum']} руб.\n';
-            if (i < 3) text += '</b>'; // (for 1st-3rd places)
-          }
+            text += '${i + 1}) $key\n$value руб.\n';
+            if (i < 3) text += '</b>'; // (for 1st-3rd places)});
+            i++;
+          });
           teledart.replyMessage(
             message,
             text,
