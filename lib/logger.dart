@@ -25,8 +25,9 @@ class Logger {
     String channel,
     String text,
     String additional = '',
+    DateTime time,
   }) {
-    DateTime time = DateTime.now();
+    // DateTime time = DateTime.now();
     String message = '${StringLib.beautifulizeTime(time)} ';
     switch (type) {
       case ActionType.Message:

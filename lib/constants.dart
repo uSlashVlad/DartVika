@@ -52,8 +52,8 @@ const kAboutBot = '''Всё сделано ради <a href="https://umschool.ne
 
 /// String for /gay command
 const kAboutCreator = '''<b>[ Создатель ]</b>
-<a href="https://t.me/uslashvlad">uslashvlad</a>
 <a href="https://github.com/uslashvlad">GitHub</a> <a href="https://vk.com/uslashvlad">ВК</a>
+<a href="https://t.me/uslashvlad">Telegram</a>
 Список донатеров и способ задонатить в /donations
 
 <i>Не ЧСВ :)</i>''';

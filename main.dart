@@ -31,7 +31,6 @@ void main() {
       logger.log('[${DateTime.now()}]\n${me.username} is initialised');
       _botUsername = me.username;
     });
-
     // Hadling Callback query
     teledart
       ..onCallbackQuery().listen(callbackqueryProcessing)
@@ -41,6 +40,13 @@ void main() {
       ..onMention().listen(messageProcessing)
       ..onHashtag().listen(messageProcessing)
 
+      // Handling new users
+      ..onMessage()
+          .where((message) =>
+              (message.new_chat_members != null) &&
+              message.new_chat_members.isNotEmpty)
+          .listen(newUserProcessing)
+
       // Handling general command situations
       ..onCommand().listen((command) {
         logger.logAction(
@@ -49,6 +55,7 @@ void main() {
           channel:
               (command.chat.title != null) ? command.chat.title : _botUsername,
           text: (command.text != null) ? command.text : '[S]',
+          time: DateTime.fromMillisecondsSinceEpoch(command.date * 1000),
         );
       })
 
@@ -61,6 +68,7 @@ void main() {
               (message.chat.title != null) ? message.chat.title : _botUsername,
           text: (message.text != null) ? message.text : '[special]',
           additional: '[E]',
+          time: DateTime.fromMillisecondsSinceEpoch(message.edit_date * 1000),
         );
         messagePostProcessing(message);
       })
@@ -263,7 +271,7 @@ void handleVoteWithApi(
 }
 
 /// Function for simple message editing
-void editMessage(Message message, String newText, String parseMode) {
+void editMessage(Message message, String newText, {String parseMode}) {
   teledart.telegram.editMessageText(
     newText,
     chat_id: message.chat.id,
@@ -280,6 +288,7 @@ void messageProcessing(Message message) {
     user: message.from.username,
     channel: (message.chat.title != null) ? message.chat.title : _botUsername,
     text: (text != null) ? text : '[S]',
+    time: DateTime.fromMillisecondsSinceEpoch(message.date * 1000),
   );
   messagePostProcessing(message);
 }
@@ -317,11 +326,11 @@ void callbackqueryProcessing(CallbackQuery query) {
   switch (data) {
     // /help command CQs processing
     case 'help_about':
-      editMessage(query.message, kCommandsList, 'html');
+      editMessage(query.message, kCommandsList, parseMode: 'html');
       result = '[Processed]';
       break;
     case 'help_commands':
-      editMessage(query.message, kAboutBot, 'html');
+      editMessage(query.message, kAboutBot, parseMode: 'html');
       result = '[Processed]';
       break;
     default:
@@ -375,7 +384,15 @@ void callbackqueryProcessing(CallbackQuery query) {
         ? query.message.chat.title
         : _botUsername,
     text: '$data >> $result',
+    time: DateTime.now(),
   );
+}
+
+// Function for processing new users in chat
+void newUserProcessing(Message message) {
+  final newUser = message.new_chat_members[0];
+  logger.log('New user (${newUser.username}) joined!');
+  teledart.replyMessage(message, 'Добро пожаловать, @${newUser.username} !');
 }
 
 /// Function for processing autoremoval
