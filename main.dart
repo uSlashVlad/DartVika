@@ -392,7 +392,11 @@ void callbackqueryProcessing(CallbackQuery query) {
 void newUserProcessing(Message message) {
   final newUser = message.new_chat_members[0];
   logger.log('New user (${newUser.username}) joined!');
-  teledart.replyMessage(message, 'Добро пожаловать, @${newUser.username} !');
+  if (newUser.username != null) {
+    teledart.replyMessage(message, 'Добро пожаловать, @${newUser.username} !');
+  } else {
+    teledart.replyMessage(message, 'Добро пожаловать, ${newUser.first_name} !');
+  }
 }
 
 /// Function for processing autoremoval
