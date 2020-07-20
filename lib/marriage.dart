@@ -29,7 +29,7 @@ class MarriageLib {
 
     // If "to" accepts invite of "from"
     eTemp = await MongoDB().loadOne('temp_marriages', {'a': to});
-    if (eTemp != null) {
+    if (eTemp != null && eTemp['b'] == from) {
       await MongoDB().insert('marriages', {'a': from, 'b': to});
       // Cleaning invites from DB
       await MongoDB().delete('temp_marriages', {'a': from});
