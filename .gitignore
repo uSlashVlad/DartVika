@@ -5,6 +5,7 @@ build/
 
 pubspec.lock
 
+# My gitignore
 .env
 data/*.json
 *.log

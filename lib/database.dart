@@ -11,8 +11,11 @@ class MongoDB {
 
   Db db;
 
-  Future<void> start(String name) async {
-    db = new Db("mongodb://localhost:27017/$name");
+  Future<void> start(String name,
+      {String password, String host = 'localhost'}) async {
+    db = (password != null)
+        ? new Db("mongodb://admin:$password@$host/$name?authSource=admin")
+        : new Db("mongodb://$host/$name");
     await db.open();
   }
 
@@ -20,11 +23,17 @@ class MongoDB {
     await db.close();
   }
 
-  Future<List<Map<String, dynamic>>> loadAllData(String collection) async {
-    return await db.collection(collection).find().toList();
-  }
+  Future<List<Map<String, dynamic>>> loadAllData(String collection) =>
+      db.collection(collection).find().toList();
+
+  Future<Map<String, dynamic>> loadOne(String collection, Map<String, dynamic> selector) =>
+      db.collection(collection).findOne(selector);
 
   Future<void> insert(String collection, Map<String, dynamic> document) async {
     await db.collection(collection).insert(document);
+  }
+
+  Future<void> delete(String collection, Map<String, dynamic> document) async {
+    await db.collection(collection).remove(document);
   }
 }

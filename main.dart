@@ -13,6 +13,7 @@ import 'package:DartVika/dogcatapi.dart';
 import 'package:DartVika/stringlib.dart';
 import 'package:DartVika/changelog.dart';
 import 'package:DartVika/database.dart';
+import 'package:DartVika/marriage.dart';
 
 // Classes initializations
 Logger logger = Logger('./main.log');
@@ -24,7 +25,13 @@ String _botUsername;
 void main() {
   load(); // Enviroment variables loading
 
-  MongoDB().start('backdb');
+  MongoDB().start(
+    'backdb',
+    password: env['MONGO_PASS'],
+    host: (env['MONGO_HOST'] != null)
+        ? env['MONGO_HOST']
+        : 'localhost', // You can remove this if "localhost"
+  );
 
   try {
     teledart.start().then((me) {
@@ -170,7 +177,102 @@ void main() {
 
       // Handling /changelog command
       ..onCommand('changelog').listen((message) => teledart
-          .replyMessage(message, '`$changelog`', parse_mode: 'markdown'));
+          .replyMessage(message, '`$changelog`', parse_mode: 'markdown'))
+
+      // Handling /try command
+      ..onCommand('try').listen((message) {
+        final args = StringLib.getArgs(message.text);
+        final author = message.from.first_name +
+            ((message.from.last_name != null)
+                ? ' ' + message.from.last_name
+                : '');
+        final res = RandomHelper.chance(0.5);
+        final resText = (res) ? 'получилось ✅' : 'не получилось ❌';
+        if (args[0] == '/try' && args.length > 1) {
+          // In case of standart usage
+          args.removeAt(0);
+          final askText = args.join(' ');
+          final text = 'Попытка "$askText" от "$author"\nРезультат: $resText';
+          teledart.replyMessage(message, text);
+        } else {
+          // In case of irregular usage
+          final text =
+              'Попытка сделать что-то от "$author"\nРезультат: $resText';
+          teledart.replyMessage(message, text);
+        }
+      })
+
+      // Handling /marry command
+      ..onCommand('marry').listen((message) async {
+        final args = StringLib.getArgs(message.text);
+        if (args.length > 1) {
+          final from = message.from.username;
+          if (from != null) {
+            var to = args[1].replaceAll('@', '');
+            if (from != to) {
+              final result = await MarriageLib.marry(from, to);
+              var text;
+              switch (result) {
+                case MarriageStatus.ExistsFrom:
+                  text = 'Вы уже заняты';
+                  break;
+                case MarriageStatus.ExistsTo:
+                  text = 'Партнёр уже занят';
+                  break;
+                case MarriageStatus.Invite:
+                  text =
+                      'Заявка на свадьбу с @$to создана\nЧтобы подтвердить её, партнёр должен написать <code>/marry $from</code>';
+                  break;
+                case MarriageStatus.InviteRewritten:
+                  text =
+                      'Заявка на свадьбу с @$to перезаписана\nЧтобы подтвердить её, партнёр должен написать <code>/marry $from</code>';
+                  break;
+                case MarriageStatus.Accept:
+                  text = 'Поздравляю! @$to и @$from теперь вместе!';
+                  break;
+              }
+              teledart.replyMessage(message, text, parse_mode: 'html');
+            } else {
+              // If "from" is equal to "to"
+              teledart.replyMessage(message, 'Нельзя жениться на самом себе');
+            }
+          } else {
+            // If sender hasn't got a username
+            teledart.replyMessage(
+                message, 'Оба партнёра должны иметь юзернейм для записи');
+          }
+        } else {
+          // If no arguments
+          teledart.replyMessage(message, 'Укажите партнёра');
+        }
+      })
+
+      // Handling /divorse comand
+      ..onCommand('divorse').listen((message) async {
+        final from = message.from.username;
+        if (from != null) {
+          final result = await MarriageLib.divorse(from);
+          if (result != null) {
+            teledart.replyMessage(
+                message, '@$from и @$result теперь разведены :(');
+          } else {
+            teledart.replyMessage(message, 'У вас и так нет пары');
+          }
+        }
+      })
+
+      // Handling /divorse comand
+      ..onCommand('pairs').listen((message) async {
+        final pairs = await MongoDB().loadAllData('marriages');
+        if (pairs.isNotEmpty) {
+          var text = '<b>Все пары, созданные в боте:</b>';
+          pairs.forEach((pair) => text += '\n`${pair['a']}` и `${pair['b']}`');
+          teledart.replyMessage(message, text, parse_mode: 'html');
+        } else {
+          teledart.replyMessage(
+              message, 'Нет ни одной зарегистрированной пары');
+        }
+      });
   } catch (e) {
     // If main part causes problems
     logger.log('[Fatal error]\n\n$e\n\n-- BOT WILL BE RESTARTED --');
