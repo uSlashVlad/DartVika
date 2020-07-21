@@ -243,7 +243,7 @@ void main() {
           }
         } else {
           // If no arguments
-          teledart.replyMessage(message, 'Укажите партнёра');
+          teledart.replyMessage(message, 'Укажите партнёра после команды');
         }
       })
 
@@ -266,7 +266,7 @@ void main() {
         final pairs = await MongoDB().loadAllData('marriages');
         if (pairs.isNotEmpty) {
           var text = '<b>Все пары, созданные в боте:</b>';
-          pairs.forEach((pair) => text += '\n`${pair['a']}` и `${pair['b']}`');
+          pairs.forEach((pair) => text += '\n<i>${pair['a']}</i> и <i>${pair['b']}</i>');
           teledart.replyMessage(message, text, parse_mode: 'html');
         } else {
           teledart.replyMessage(
