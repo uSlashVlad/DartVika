@@ -24,6 +24,8 @@ class MarriageLib {
     // If "from" already sent invite
     var eTemp = await MongoDB().loadOne('temp_marriages', {'a': from});
     if (eTemp != null) {
+      await MongoDB().delete('temp_marriages', {'a': from});
+      await MongoDB().insert('temp_marriages', {'a': from, 'b': to});
       return MarriageStatus.InviteRewritten;
     }
 
