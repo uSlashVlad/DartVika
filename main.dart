@@ -14,10 +14,12 @@ import 'package:DartVika/stringlib.dart';
 import 'package:DartVika/changelog.dart';
 import 'package:DartVika/database.dart';
 import 'package:DartVika/marriage.dart';
+import 'package:DartVika/myapi.dart';
 
 // Classes initializations
 Logger logger = Logger('./main.log');
 DogCatHelper advancedApi = DogCatHelper(env['DOGCAT_KEY'], logger);
+MyApiHelper myApi = MyApiHelper();
 TeleDart teledart = TeleDart(Telegram(env['TOKEN']), Event());
 String changelog = loadChanges('./data/changelog');
 String _botUsername;
@@ -175,6 +177,13 @@ void main() {
       ..onCommand('dog')
           .listen((message) => sendFileFromAPI(message, AnimalType.Dog))
 
+      // Handling simple /dance command
+      // works with my stupid and useless API :P
+      ..onCommand('dance').listen((message) async {
+        teledart.telegram.sendChatAction(message.chat.id, 'upload_video');
+        teledart.replyVideo(message, await myApi.getDanceGifUrl());
+      })
+
       // Handling /changelog command
       ..onCommand('changelog').listen((message) => teledart
           .replyMessage(message, '`$changelog`', parse_mode: 'markdown'))
@@ -266,7 +275,8 @@ void main() {
         final pairs = await MongoDB().loadAllData('marriages');
         if (pairs.isNotEmpty) {
           var text = '<b>Все пары, созданные в боте:</b>';
-          pairs.forEach((pair) => text += '\n<i>${pair['a']}</i> и <i>${pair['b']}</i>');
+          pairs.forEach(
+              (pair) => text += '\n<i>${pair['a']}</i> и <i>${pair['b']}</i>');
           teledart.replyMessage(message, text, parse_mode: 'html');
         } else {
           teledart.replyMessage(
