@@ -1,6 +1,6 @@
 name: DartVika
 description: Telegram bot on Dart
-version: 1.4.4
+version: 1.4.5
 
 environment:
   sdk: ">=2.1.0 <3.0.0"

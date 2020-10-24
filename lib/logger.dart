@@ -14,8 +14,7 @@ class Logger {
   /// Method adds at end of log file "[separator][text]"
   String log(String text, {String separator = '\n'}) {
     print(text);
-    logFile.writeAsStringSync('${logFile.readAsStringSync()}$separator$text',
-        mode: FileMode.append);
+    logFile.writeAsStringSync(text, mode: FileMode.append);
     return text;
   }
 
